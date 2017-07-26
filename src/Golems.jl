@@ -23,7 +23,8 @@ export  TF_RE_ANOVA_Data_balanced,
         Model,
         JointPosterior,
         marginal,
-        gen_data
+        gen_data,
+        Normal
 
 include("helper_functions.jl")
 include("ANOVA.jl")

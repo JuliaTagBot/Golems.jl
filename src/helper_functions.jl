@@ -50,8 +50,22 @@ function chol!(U::AbstractArray{<:Real,2}, Σ::AbstractArray{<:Real,2})
     U[i,i] = √U[i,i]
   end
 end
+function chol2!(U::AbstractArray{<:Real,2}, Σ::AbstractArray{<:Real,2})
+  @inbounds for i ∈ 1:size(U,1)
+    U[i,i] = Σ[i,i]
+    for j ∈ 1:i-1
+      U[j,i] = Σ[j,i]
+      for k ∈ 1:j-1
+        U[j,i] -= U[k,i] * U[k,j]
+      end
+      U[j,i] /= U[j,j]
+      U[i,i] -= U[j,i]^2
+    end
+    U[i,i] = √U[i,i]
+  end
+end
 function chol!(U::AbstractArray{<:Real,2})
-  for i ∈ 1:size(U,1)
+  @inbounds for i ∈ 1:size(U,1)
     for j ∈ 1:i-1
       for k ∈ 1:j-1
         U[j,i] -= U[k,i] * U[k,j]

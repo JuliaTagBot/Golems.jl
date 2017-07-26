@@ -130,8 +130,6 @@ end
 
 
 
-
-
 function log_priors(Θ::CorrErrors{p,T}, data::Data) where {p,T}
   out = logpdf(data.S1Beta, Θ.S[1])
   out += logpdf(data.C1Beta, Θ.C[1])
@@ -144,10 +142,19 @@ function log_priors(Θ::CorrErrors{p,T}, data::Data) where {p,T}
 end
 
 function log_likelihood(Θ::CorrErrors, n::SVector{8,Int}, π::Real)
-  out = n[1] * log( π * (Θ.S[1]*Θ.S[2]+Θ.covsc.x[1]) + (1-π) * ((1-Θ.C[1])*(1-Θ.C[2])+Θ.covsc.x[2]))
-  out += n[2] * log( π * (Θ.S[1]*(1-Θ.S[2])-Θ.covsc.x[1]) + (1-π) * ((1-Θ.C[1])*Θ.C[2]-Θ.covsc.x[2]))
-  out += n[3] * log( π * ((1-Θ.S[1])*Θ.S[2]-Θ.covsc.x[1]) + (1-π) * (Θ.C[1]*(1-Θ.C[2])-Θ.covsc.x[2]))
-  out += n[4] * log( π * ((1-Θ.S[1])*(1-Θ.S[2])+Θ.covsc.x[1]) + (1-π) * (Θ.C[1]*Θ.C[2]+Θ.covsc.x[2]))
+  out = n[1] * log( π * (Θ.S[1]*Θ.S[2]+Θ.covsc[1]) + (1-π) * ((1-Θ.C[1])*(1-Θ.C[2])+Θ.covsc[2]))
+  p = π * (Θ.S[1]*(1-Θ.S[2])-Θ.covsc[1]) + (1-π) * ((1-Θ.C[1])*Θ.C[2]-Θ.covsc[2])
+  if p < 0
+    println(p)
+    println(Θ.S)
+    println(Θ.C)
+    println(Θ.covsc)
+    throw("p < 0")
+  else
+    out += n[2] * log( p )
+  end
+  out += n[3] * log( π * ((1-Θ.S[1])*Θ.S[2]-Θ.covsc[1]) + (1-π) * (Θ.C[1]*(1-Θ.C[2])-Θ.covsc[2]))
+  out += n[4] * log( π * ((1-Θ.S[1])*(1-Θ.S[2])+Θ.covsc[1]) + (1-π) * (Θ.C[1]*Θ.C[2]+Θ.covsc[2]))
 
   out += n[5] * log( π*Θ.S[1] + (1-π)*(1-Θ.C[1]) )
   out += n[6] * log( π*(1-Θ.S[1]) + (1-π)*Θ.C[1] )

@@ -1,6 +1,6 @@
 module Golems
 
-using TensorOperations, StaticArrays, ConstrainedParameters, LogDensities, JointPosteriors, Distributions
+using TensorOperations, StaticArrays, SparseQuadratureGrids, ConstrainedParameters, LogDensities, JointPosteriors, Distributions
 
 import  LogDensities.negative_log_density,
         LogDensities.negative_log_density!,

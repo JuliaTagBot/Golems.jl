@@ -11,7 +11,6 @@ cc = [minimum(S) - prod(S), minimum(C) - prod(C)]
 @testset for p ∈ 1:7
   m = Model(Golems.CorrErrors{p});
   tv = Golems.construct(Golems.CorrErrors{p,Float64}, rand(p), S, C, (0.5 .+ 0.5 .* rand(2)) .* cc)
-  m = Model(Golems.CorrErrors{p})
   n = gen_data(tv, 200, 75, 50)
   ced = Golems.CorrErrorsData(n..., αS1 = S[1]*pess, βS1 = (1-S[1])*pess, αS2 = S[2]*pess, βS2 = (1-S[2])*pess, αC1 = C[1]*pess, βC1 = (1-C[1])*pess, αC2 = C[2]*pess, βC2 = (1-C[2])*pess)
   jp = JointPosterior(m, ced)

@@ -98,7 +98,7 @@ struct TF_RE_MANOVA{p,T} <: parameters{T,1}
 
 end
 
-function update_Σ!{p}(Θ::TF_RE_MANOVA{p,<:Real})
+function ConstrainedParameters.update_Σ!(Θ::TF_RE_MANOVA{p,<:Real}) where {p}
   update_Σ!(Θ.Σβ)
   update_Σ!(Θ.Στ)
   update_Σ!(Θ.Σθ)
@@ -167,14 +167,14 @@ function TF_RE_MANOVA_Data_balanced(y::Array{Float64,2}, yb::Array{Int64,1}, yt:
   TF_RE_MANOVA_Data_balanced(b, t, b-1, t-1, bt, bt-b-t+1, N, bt*(N-1), p, [Array{Float64,2}(p,p) for i ∈ 1:4], Σμ, bt .* Σμ, Γβ, Γτ, Γθ, Γϵ, yE1, yE2, yE3, yE4, νβ+1, ντ+1, νθ+1, νϵ+1)
 end
 
-function outer_prod{T}(x::Vector{T}, y::Vector{T})
+function outer_prod(x::Vector{T}, y::Vector{T}) where {T}
   out = Array{T}(length(x), length(y))
   for i ∈ eachindex(x), j ∈ eachindex(y)
     out[j,i] = x[i] * y[j]
   end
   out
 end
-function outer_prod{T}(x::Vector{T})
+function outer_prod(x::Vector{T}) where {T}
   p = length(x)
   out = Array{T}(p,p)
   for i ∈ 1:p
@@ -186,13 +186,13 @@ function outer_prod{T}(x::Vector{T})
   out
 end
 
-function compΛ!{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_balanced)
+function compΛ!(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_balanced) where {p}
   data.Λcomp[4] .= Θ.Σθ.Σ .+ Θ.Σϵ.Σ ./ data.N
   data.Λcomp[3] .= data.t .* Θ.Σβ.Σ .+ data.Λcomp[4]
   data.Λcomp[2] .= data.b .* Θ.Στ.Σ .+ data.Λcomp[4]
   data.Λcomp[1] .= data.b .* Θ.Στ.Σ .+ data.Λcomp[3] .+ data.btΣμ
 end
-function compΛ{p,T}(Θ::TF_RE_MANOVA{p,T}, data::TF_RE_MANOVA_Data_balanced)
+function compΛ(Θ::TF_RE_MANOVA{p,T}, data::TF_RE_MANOVA_Data_balanced) where {p,T}
   Λcomp = Vector{Array{T,2}}(4)
   Λcomp[4] = Θ.Σθ.Σ .+ Θ.Σϵ.Σ ./ data.N
   Λcomp[3] = data.t .* Θ.Σβ.Σ .+ Λcomp[4]
@@ -200,23 +200,23 @@ function compΛ{p,T}(Θ::TF_RE_MANOVA{p,T}, data::TF_RE_MANOVA_Data_balanced)
   Λcomp[1] = data.b .* Θ.Στ.Σ .+ Λcomp[3] .+ data.btΣμ
   Λcomp
 end
-function compQuad{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_balanced)
+function compQuad(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_balanced) where {p}
   htraceSymProd( data.yE1, data.Λcomp[1] ) + htraceSymProd( data.yE2, data.Λcomp[2] ) + htraceSymProd( data.yE3, data.Λcomp[3] ) + htraceSymProd( data.yE4, data.Λcomp[4] )
 end
-function compQuad{T<:Real}(Θ::TF_RE_MANOVA, data::TF_RE_MANOVA_Data_balanced, Λcomp::Vector{Array{T,2}})
+function compQuad(Θ::TF_RE_MANOVA, data::TF_RE_MANOVA_Data_balanced, Λcomp::Vector{Array{T,2}}) where {T<:Real}
   htraceSymProd( data.yE1, Λcomp[1] ) + htraceSymProd( data.yE2, Λcomp[2] ) + htraceSymProd( data.yE3, Λcomp[3] ) + htraceSymProd( data.yE4, Λcomp[4] )
 end
 #2out - b*t*p*log(n) gives the actual log determinant.
-function compLogDet{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_balanced)
+function compLogDet(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_balanced) where {p}
   logTriangleDet(data.Λcomp[1]) + data.tm1*logTriangleDet(data.Λcomp[2]) + data.bm1*logTriangleDet(data.Λcomp[3]) + data.btmbmtp1*logTriangleDet(data.Λcomp[4]) - data.Nm1bt*hlogdet(Θ.Σϵ)
 end
-function compLogDet{p,T<:Real}(Θ::TF_RE_MANOVA{p,<:Real}, data::TF_RE_MANOVA_Data_balanced, Λcomp::Vector{Array{T,2}})
+function compLogDet(Θ::TF_RE_MANOVA{p,<:Real}, data::TF_RE_MANOVA_Data_balanced, Λcomp::Vector{Array{T,2}}) where {p,T<:Real}
   logTriangleDet(Λcomp[1]) + data.tm1*logTriangleDet(Λcomp[2]) + data.bm1*logTriangleDet(Λcomp[3]) + data.btmbmtp1*logTriangleDet(Λcomp[4]) - data.Nm1bt*hlogdet(Θ.Σϵ)
 end
 function compPrior(Θ::TF_RE_MANOVA, data::TF_RE_MANOVA_Data_balanced)
   data.νβp1*nhlogdet(Θ.Σβ) + data.ντp1*nhlogdet(Θ.Στ) + data.νθp1*nhlogdet(Θ.Σθ) + data.νϵp1*nhlogdet(Θ.Σϵ) - htrace_AΣinv(data.Γβ, Θ.Σβ) - htrace_AΣinv(data.Γτ, Θ.Στ) - htrace_AΣinv(data.Γθ, Θ.Σθ) - htrace_AΣinv(data.Γϵ, Θ.Σϵ)
 end
-function log_density{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_balanced)
+function log_density(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_balanced) where {p}
   update_Σ!(Θ)
   compΛ!(Θ, data)
   for i ∈ eachindex(data.Λcomp)
@@ -229,7 +229,7 @@ function log_density{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_bal
   end
   out - compQuad(Θ, data)
 end
-function log_density{ p, T <: Real }(Θ::TF_RE_MANOVA{p,T}, data::TF_RE_MANOVA_Data_balanced)
+function log_density(Θ::TF_RE_MANOVA{p,T}, data::TF_RE_MANOVA_Data_balanced) where { p, T <: Real }
   update_Σ!(Θ)
   Λcomp = compΛ(Θ, data)
   for i ∈ eachindex(Λcomp)
@@ -244,105 +244,29 @@ function log_density{ p, T <: Real }(Θ::TF_RE_MANOVA{p,T}, data::TF_RE_MANOVA_D
 end
 
 
-function compΛ!{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_unbalanced)
-  data.Λcomp[4] = Θ.σ.x[4] / data.R + Θ.σ.x[3]
-  data.Λcomp[3] = data.Λcomp[4] + data.O * Θ.σ.x[1]
-  data.Λcomp[2] = data.Λcomp[4] + data.P * Θ.σ.x[2]
-  data.Λcomp[1] = data.Λcomp[3] + data.P * Θ.σ.x[2]
-  data.Λcomp_i .= 1 ./ data.Λcomp
-  data.Λ[1] = data.Λcomp_i[1]
-  for i ∈ 2:data.O
-    data.Λ[i] = data.Λcomp_i[2]
-  end
-  for i ∈ data.O+1:data.O:data.PO
-    data.Λ[i] = data.Λcomp_i[3]
-    for j ∈ i+(1:data.O-1)
-      data.Λ[j] = data.Λcomp_i[4]
-    end
-  end
+function compΛ!(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_unbalanced) where {p}
 end
 
-function log_density{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_unbalanced)
-  compΛ!(Θ, data)
-
-  - ( data.s2 / Θ.σ.x[4] + dot(data.Pδ2, data.Λ) + log(data.Λcomp[1]) + data.Om1*log(data.Λcomp[2]) + data.Pm1*(log(data.Λcomp[3]) + data.Om1*log(data.Λcomp[4])) + data.Rm1*data.PO*log(Θ.σ.x[4]) + sum(log, Θ.σ.x) ) / 2 - log( 1 + Θ.σ.x[2] / data.cauchy_spread2 )
-
+function log_density(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_unbalanced) where {p}
 end
 
-function log_density{p, T <: Real }(Θ::TF_RE_MANOVA{p, T}, data::TF_RE_MANOVA_Data_unbalanced)
-  out = data.s2 / Θ.σ.x[4]
-  Λcomp4 = Θ.σ.x[4] / data.R + Θ.σ.x[3]
-  Λcomp3 = Λcomp4 + data.O * Θ.σ.x[1]
-  Λcomp2 = Λcomp4 + data.P * Θ.σ.x[2]
-  Λcomp1 = Λcomp3 + data.P * Θ.σ.x[2]
-
-  out += data.Pδ2[1] / Λcomp1
-  for i ∈ 2:data.O
-    out += data.Pδ2[i] / Λcomp2
-  end
-  for i ∈ data.O+1:data.O:data.PO
-    out += data.Pδ2[i] / Λcomp3
-    for j ∈ i+(1:data.O-1)
-      out += data.Pδ2[j] / Λcomp4
-    end
-  end
-
-  - ( out + log(Λcomp1) + data.Om1*log(Λcomp2) + data.Pm1*(log(Λcomp3) + data.Om1*log(Λcomp4)) + data.Rm1*data.PO*log(Θ.σ.x[4]) + sum(log, Θ.σ.x) ) / 2  - log( 1 + Θ.σ.x[2] / data.cauchy_spread2 )
-
+function log_density(Θ::TF_RE_MANOVA{p, T}, data::TF_RE_MANOVA_Data_unbalanced) where {p, T <: Real }
 end
 
 
 
-function compΛ!{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_incomplete)
-  data.Λcomp[4] = Θ.σ.x[4] / data.R + Θ.σ.x[3]
-  data.Λcomp[3] = data.Λcomp[4] + data.O * Θ.σ.x[1]
-  data.Λcomp[2] = data.Λcomp[4] + data.P * Θ.σ.x[2]
-  data.Λcomp[1] = data.Λcomp[3] + data.P * Θ.σ.x[2]
-  data.Λcomp_i .= 1 ./ data.Λcomp
-  data.Λ[1] = data.Λcomp_i[1]
-  for i ∈ 2:data.O
-    data.Λ[i] = data.Λcomp_i[2]
-  end
-  for i ∈ data.O+1:data.O:data.PO
-    data.Λ[i] = data.Λcomp_i[3]
-    for j ∈ i+(1:data.O-1)
-      data.Λ[j] = data.Λcomp_i[4]
-    end
-  end
+function compΛ!(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_incomplete) where {p}
 end
 
-function log_density{p}(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_incomplete)
-  compΛ!(Θ, data)
-
-  - ( data.s2 / Θ.σ.x[4] + dot(data.Pδ2, data.Λ) + log(data.Λcomp[1]) + data.Om1*log(data.Λcomp[2]) + data.Pm1*(log(data.Λcomp[3]) + data.Om1*log(data.Λcomp[4])) + data.Rm1*data.PO*log(Θ.σ.x[4]) + sum(log, Θ.σ.x) ) / 2 - log( 1 + Θ.σ.x[2] / data.cauchy_spread2 )
-
+function log_density(Θ::TF_RE_MANOVA{p,Float64}, data::TF_RE_MANOVA_Data_incomplete) where {p}
 end
 
-function log_density{p, T <: Real }(Θ::TF_RE_MANOVA{p,T}, data::TF_RE_MANOVA_Data_incomplete)
-  out = data.s2 / Θ.σ.x[4]
-  Λcomp4 = Θ.σ.x[4] / data.R + Θ.σ.x[3]
-  Λcomp3 = Λcomp4 + data.O * Θ.σ.x[1]
-  Λcomp2 = Λcomp4 + data.P * Θ.σ.x[2]
-  Λcomp1 = Λcomp3 + data.P * Θ.σ.x[2]
-
-  out += data.Pδ2[1] / Λcomp1
-  for i ∈ 2:data.O
-    out += data.Pδ2[i] / Λcomp2
-  end
-  for i ∈ data.O+1:data.O:data.PO
-    out += data.Pδ2[i] / Λcomp3
-    for j ∈ i+(1:data.O-1)
-      out += data.Pδ2[j] / Λcomp4
-    end
-  end
-
-  - ( out + log(Λcomp1) + data.Om1*log(Λcomp2) + data.Pm1*(log(Λcomp3) + data.Om1*log(Λcomp4)) + data.Rm1*data.PO*log(Θ.σ.x[4]) + sum(log, Θ.σ.x) ) / 2  - log( 1 + Θ.σ.x[2] / data.cauchy_spread2 )
-
+function log_density(Θ::TF_RE_MANOVA{p,T}, data::TF_RE_MANOVA_Data_incomplete) where {p, T <: Real }
 end
 
 #calc_p(l::Int) = round(Int, (√(2l + 1) - 1)/2 )
 
-function negative_log_density{T, P<:TF_RE_MANOVA}(Θ::Vector{T}, ::Type{P}, data::Data)
+function negative_log_density(Θ::Vector{T}, ::Type{P}, data::Data) where {T, P<:TF_RE_MANOVA}
   param = construct(P{T}, Θ)
   nld = -log_jacobian!(param)
   nld - log_density(param, data)
@@ -352,8 +276,8 @@ function negative_log_density!(Θ::TF_RE_MANOVA, data::Data)
   nld - log_density(Θ, data)
 end
 
-function Model(::Type{TF_RE_MANOVA}, p::Int; l = 6, q::DataType = GenzKeister, seq::Vector{Int} = SparseQuadratureGrids.default(q))
+function Model(::Type{TF_RE_MANOVA}, p::Int; l = 6, q::DataType = SparseQuadratureGrids.GenzKeister, seq::Vector{Int} = SparseQuadratureGrids.default(q))
   Θ = construct(TF_RE_MANOVA{p, Float64})
-  Grid = SplitWeights(length(Θ), l, q, seq)
+  Grid = GridContainer(length(Θ), l, q, seq)
   Model(Grid, Θ, TF_RE_MANOVA{p})
 end
